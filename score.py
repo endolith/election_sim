@@ -44,31 +44,11 @@ def hare_quota(votes, seats):
     return int(votes / seats)
 
 
-def droop_quota(votes, seats):
-    """
-    Threshold of votes required to get elected for STV. 
-    
-    
-    Parameters
-    -----------
-    votes : int
-        Total number of votes cast in election
-    seats : int
-        Total number of seats needed to be filled.
-        
-    
-    Returns
-    -------
-    out : int
-        Droop quota; number of votes required to get elected. 
-    """
-    
-    return int(np.floor(votes / (seats + 1)) + 1)
 
 
 
 
-def reweighted_range(data, winners=1, C_ratio=1.0, weights=None):
+def reweighted_range(data, numwin=1, C_ratio=1.0, weights=None):
     """
     Multi-winner election using reweighted range voting.
     
@@ -90,42 +70,73 @@ def reweighted_range(data, winners=1, C_ratio=1.0, weights=None):
         - b : number of candidates. A score is assigned for each candidate 
               from 0 to b-1.   
               
-    winners : int
+    numwin : int
         Number of winners to consider
     
     C_ratio : float
         Proportionality factor
         
-        - C_ratio = 1.0 -- Greatest divisors (d'Hondt, Jefferson) proportionality
-        - C_ratio = M/2 -- Major fractions (Webster, Saint-Lague) method
+        - C_ratio = 1.0 -- M; Greatest divisors (d'Hondt, Jefferson) proportionality
+        - C_ratio = 0.5 -- M/2; Major fractions (Webster, Saint-Lague) method
               
     """
     data = np.atleast_2d(data)
     
     max_score = np.max(data)
-    ballot_sums = np.sum(data, axis=1)
+    ballot_num = data.shape[0]
     C = max_score * C_ratio
     
     # Set initial weights as uniform
     if weights is None:
-        weights = np.ones(data.shape[0])
+        weights = np.ones(ballot_num)
     
     winners = []        # Store winning candidate indices here.
     
-    # Loop through for number of winners. 
-    for i in range(winners):
-        sums = np.sum(data, axis=0) * weights
-        winner = np.argmax(sums)
-        weights = C / (C + ballot_sums)
-        winners.append(winner)
+    # Store the total score given to winners by each voter
+    winner_sum = np.zeros(ballot_num)
     
+    # Loop through for number of winners. 
+    for i in range(numwin):
+        print('\nRound #%d' % i)
+        data_weighted = data * weights[:, None]
+        
+        #print('ballot scores = ')
+        #print(np.round(data_weighted, decimals=1))
+        #print('weights = ')
+        #print(np.round(weights[:, None], 2))
+        # Calculate weighted net score for each candidate
+        sums = np.sum(data_weighted, axis=0)
+        
+        print('net scores = %s' % sums)
+        
+        # Get candidate with greatest score
+        winner = np.argmax(sums)
+        print('round winner = %s' % winner)
+        # Calculate total winning scores from  each voter
+        winner_sum = winner_sum + data[:, winner]
+        
+        # Calculate new weighting
+        weights = C / (C + winner_sum)
+        winners.append(winner)
+        data[:, winner] = 0
+        
+    winners = np.sort(winners)
+    print('winners = %s' % winners)
     return winners
 
 
 
-def sequential_monroe(data, winners=1):
+#def sequential_monroe(data, winners=1):
     
     
-        
+# Generate some random ballot results
+
+d = [[10, 9, 8, 1, 0]] * 60 + [[0, 0, 0, 10, 10]] * 40
+d = np.array(d)
+
+# Call the STV function
+w = reweighted_range(d, 3)
+
+
     
         
