@@ -33,9 +33,8 @@ def score_calculator(data, winners=1):
     data = np.atleast_2d(data)
     results = data.sum(axis=0)
     index = np.argsort(results)
-    
-    output = {}
-    output['scores'] = results
+
+    output = {'scores': results}
     return index[-1], output
 
 
@@ -81,47 +80,47 @@ def reweighted_range(data, numwin=1, C_ratio=1.0, weights=None):
               
     """
     data = np.atleast_2d(data)
-    
+
     max_score = np.max(data)
     ballot_num = data.shape[0]
     C = max_score * C_ratio
-    
+
     # Set initial weights as uniform
     if weights is None:
         weights = np.ones(ballot_num)
-    
+
     winners = []        # Store winning candidate indices here.
-    
+
     # Store the total score given to winners by each voter
     winner_sum = np.zeros(ballot_num)
-    
-    # Loop through for number of winners. 
+
+    # Loop through for number of winners.
     for i in range(numwin):
         print('\nRound #%d' % i)
         data_weighted = data * weights[:, None]
-        
+
         #print('ballot scores = ')
         #print(np.round(data_weighted, decimals=1))
         #print('weights = ')
         #print(np.round(weights[:, None], 2))
         # Calculate weighted net score for each candidate
         sums = np.sum(data_weighted, axis=0)
-        
-        print('net scores = %s' % sums)
-        
+
+        print(f'net scores = {sums}')
+
         # Get candidate with greatest score
         winner = np.argmax(sums)
-        print('round winner = %s' % winner)
+        print(f'round winner = {winner}')
         # Calculate total winning scores from  each voter
         winner_sum = winner_sum + data[:, winner]
-        
+
         # Calculate new weighting
         weights = C / (C + winner_sum)
         winners.append(winner)
         data[:, winner] = 0
-        
+
     winners = np.sort(winners)
-    print('winners = %s' % winners)
+    print(f'winners = {winners}')
     return winners
 
 

@@ -64,7 +64,7 @@ def RCV_eliminate(data):
     # Ignore candidates which have all zero data; set to 1st ranking temporarily    
     eliminated = np.sum(data, axis=0) == 0
     data[:, eliminated] = 1
-    
+
     # Iterate in case of ties
     for rank in range(1, num_candidates + 1):
         
@@ -72,27 +72,27 @@ def RCV_eliminate(data):
         first_choices = (data == rank)
         vote_totals = first_choices.sum(axis = 0)
         loser = np.argmin(vote_totals)
-        
+
         # Check for tie of losers...
         tie_index = np.where(vote_totals[loser] == vote_totals)[0]
         if len(tie_index) == 1:
-            print('Eliminating candidate %s using #%s ranking' % (loser, rank) )
+            print(f'Eliminating candidate {loser} using #{rank} ranking')
             break
         else:
-            print('tie found for candidates %s' % tie_index)    
-    
+            print(f'tie found for candidates {tie_index}')    
+
     # Retrieve ballots whose candidate has been eliminated.
     index_eliminated = (data[:, loser] == 1)
-    
+
     # Decrement the rankins for remaining candidates on ballots
     data[index_eliminated] = data[index_eliminated] - 1
-    
+
     # Set loser rank to zero.
     data[:, loser] = 0
-    
+
     # Set eliminated ranks back to zero
     data[:, eliminated] = 0
-    
+
     data = RCV_reorder(data)
     return data, loser
 
@@ -168,46 +168,46 @@ def STV_calculator(data, winners=1, reallocation='hare', seed=0):
     data = np.atleast_2d(data)
     data = RCV_reorder(data)
     dmax = data.max()
-    
+
     # Give unranked candidates worst position. 
     data[data == -1] = dmax * 10
-    
-    
+
+
     original = np.copy(data)
-    
+
     num_candidates = data.shape[1]
     num_voters = data.shape[0]
     quota = droop_quota(num_voters, winners)
     print('quota = %d' % quota)
-    
+
     winner_list = []
     round_results = []
     i = 0
     while len(winner_list) < winners:
         i += 1
-        
+
         # get the votes for the i^th round, shaped (a, b)
         ith_round_votes = (data == 1)        
-        
+
         # total votes for each candidate; array shaped (b); number of candidates
         ith_vote_totals = ith_round_votes.sum(axis = 0)
-        
+
         print("\nRound %d" % i)
-        print("Candidate vote totals = %s" % ith_vote_totals)
+        print(f"Candidate vote totals = {ith_vote_totals}")
         print(data)
         round_results.append(ith_vote_totals)
-        
+
         # Which candidates have won
         round_winners = np.where(ith_vote_totals >= quota)[0]
-        
+
         if len(round_winners) > 0:
             
             if reallocation == 'hare':
-                # Retrieve ballots of winners. 
+                # Retrieve ballots of winners.
                 for k in round_winners:
                     
                     surplus = ith_vote_totals[k] - quota
-                    
+
                     winning_ballot_index = np.flatnonzero(data[:, k] == 1)
                     winning_data = data[winning_ballot_index]
                     winning_ballot_num = len(winning_data)
@@ -217,33 +217,32 @@ def STV_calculator(data, winners=1, reallocation='hare', seed=0):
                     np.random.seed(seed)
                     shuffled_index = winning_ballot_index.copy()
                     np.random.shuffle(shuffled_index)
-                    remove_index = shuffled_index[0 : num2remove]
+                    remove_index = shuffled_index[:num2remove]
                     retain_index = shuffled_index[num2remove :]
-                    
+
                     # Zero out winner votes that are not surplus.
                     data[remove_index, :] = 0
-                    
+
                     # Zero out the winner and re-order. 
                     data[:, k] = 0
                     data = RCV_reorder(data)
-                                      
+
                     winner_list.append(k)
-                    
+
                     print("Winner Found = Candidate #%r" % k)
                     print("Surplus Votes = %d" % surplus)
-                    print("Winning ballots to remove = %s" % remove_index)
-                    print("Winning ballots transfer = %s" % retain_index)
-                                    
-        
-        # begin candidate elimination
+                    print(f"Winning ballots to remove = {remove_index}")
+                    print(f"Winning ballots transfer = {retain_index}")
+                                                        
+
         else:
             data, loser = RCV_eliminate(data)
             print("Candidate %d eliminated." % loser)
-            
-    
+
+
     print("WINNERS")
     print(winner_list)
- 
+
     return np.array(winner_list)
         
     
